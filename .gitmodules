@@ -1,3 +1,39 @@
 [submodule "fuel/packages/helper"]
 	path = fuel/packages/helper
 	url = https://github.com/TeamPalmTree/helper
+[submodule "fuel/core"]
+	path = fuel/core
+	url = https://github.com/fuel/core
+[submodule "fuel/packages/orm"]
+	path = fuel/packages/orm
+	url = https://github.com/fuel/orm
+[submodule "fuel/packages/oil"]
+	path = fuel/packages/oil
+	url = https://github.com/fuel/oil
+[submodule "fuel/packages/auth"]
+	path = fuel/packages/auth
+	url = https://github.com/fuel/auth
+[submodule "fuel/packages/email"]
+	path = fuel/packages/email
+	url = https://github.com/fuel/email
+[submodule "fuel/packages/parser"]
+	path = fuel/packages/parser
+	url = https://github.com/fuel/parser
+[submodule "fuel/app"]
+	path = fuel/app
+	url = https://github.com/TeamPalmTree/cloudcast
+[submodule "fuel/packages/getid3"]
+	path = fuel/packages/getid3
+	url = https://github.com/TeamPalmTree/getid3
+[submodule "fuel/packages/tagscanner"]
+	path = fuel/packages/tagscanner
+	url = https://github.com/TeamPalmTree/tagscanner
+[submodule "fuel/packages/lshook"]
+	path = fuel/packages/lshook
+	url = https://github.com/TeamPalmTree/lshook
+[submodule "fuel/packages/cemw"]
+	path = fuel/packages/cemw
+	url = https://github.com/TeamPalmTree/cemw
+[submodule "fuel/packages/less"]
+	path = fuel/packages/less
+	url = https://github.com/kriansa/fuel-less
