@@ -31,12 +31,12 @@
 [submodule "fuel/packages/cemw"]
 	path = fuel/packages/cemw
 	url = https://github.com/TeamPalmTree/cemw
-[submodule "fuel/packages/less"]
-	path = fuel/packages/less
-	url = https://github.com/kriansa/fuel-less
 [submodule "fuel/packages/shared"]
 	path = fuel/packages/shared
 	url = https://github.com/TeamPalmTree/shared
 [submodule "public/assets/shared"]
 	path = public/assets/shared
 	url = https://github.com/TeamPalmTree/assets.git
+[submodule "fuel/packages/less"]
+	path = fuel/packages/less
+	url = https://github.com/TeamPalmTree/fuel-less
