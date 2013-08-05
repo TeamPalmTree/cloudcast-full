@@ -40,3 +40,6 @@
 [submodule "fuel/packages/less"]
 	path = fuel/packages/less
 	url = https://github.com/TeamPalmTree/fuel-less
+[submodule "fuel/packages/ichook"]
+	path = fuel/packages/ichook
+	url = https://github.com/TeamPalmTree/ichook
