@@ -22,12 +22,6 @@
 [submodule "fuel/packages/getid3"]
 	path = fuel/packages/getid3
 	url = https://github.com/TeamPalmTree/getid3
-[submodule "fuel/packages/tagscanner"]
-	path = fuel/packages/tagscanner
-	url = https://github.com/TeamPalmTree/tagscanner
-[submodule "fuel/packages/lshook"]
-	path = fuel/packages/lshook
-	url = https://github.com/TeamPalmTree/lshook
 [submodule "fuel/packages/cemw"]
 	path = fuel/packages/cemw
 	url = https://github.com/TeamPalmTree/cemw
@@ -43,3 +37,12 @@
 [submodule "fuel/packages/ichook"]
 	path = fuel/packages/ichook
 	url = https://github.com/TeamPalmTree/ichook
+[submodule "fuel/packages/tagscanner"]
+	path = fuel/packages/tagscanner
+	url = https://github.com/TeamPalmTree/cloudcast-tagscanner.git
+[submodule "fuel/packages/lshook"]
+	path = fuel/packages/lshook
+	url = https://github.com/TeamPalmTree/cloudcast-lshook
+[submodule "liquidsoap"]
+	path = liquidsoap
+	url = https://github.com/TeamPalmTree/cloudcast-liquidsoap.git
