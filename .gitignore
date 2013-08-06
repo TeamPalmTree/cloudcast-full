@@ -15,4 +15,8 @@ build
 /fuel/app/cache/*/*
 /fuel/app/config/crypt.php
 nbproject/
-
+/fuel/app/config/*/db.php
+/fuel/app/config/*/migrations.php
+/fuel/app/config/cloudcast.php
+/fuel/app/config/liquidsoap.php
+/fuel/app/liquidsoap/includes/cloudcast.config.php
