@@ -16,9 +16,6 @@
 [submodule "fuel/packages/parser"]
 	path = fuel/packages/parser
 	url = https://github.com/fuel/parser
-[submodule "fuel/app"]
-	path = fuel/app
-	url = https://github.com/TeamPalmTree/cloudcast
 [submodule "fuel/packages/getid3"]
 	path = fuel/packages/getid3
 	url = https://github.com/TeamPalmTree/getid3
@@ -43,6 +40,9 @@
 [submodule "fuel/packages/lshook"]
 	path = fuel/packages/lshook
 	url = https://github.com/TeamPalmTree/cloudcast-lshook
+[submodule "fuel/app"]
+	path = fuel/app
+	url = https://github.com/TeamPalmTree/cloudcast
 [submodule "liquidsoap"]
 	path = liquidsoap
-	url = https://github.com/TeamPalmTree/cloudcast-liquidsoap.git
+	url = https://github.com/TeamPalmTree/cloudcast-liquidsoap

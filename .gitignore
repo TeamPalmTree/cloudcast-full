@@ -10,5 +10,5 @@ desktop.ini
 *.tmproj
 build
 .idea
-fuel/vendor
+/fuel/vendor
 nbproject/
