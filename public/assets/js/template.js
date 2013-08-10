@@ -1146,12 +1146,14 @@ function hook_users() {
 ///////////
 
 $(function() {
-    hook_blocks();
-    hook_cloudcast();
-    hook_files();
-    hook_schedules();
-    hook_settings();
-    hook_shows();
-    hook_streams();
-    hook_users();
+    setTimeout(function() {
+        hook_blocks();
+        hook_cloudcast();
+        hook_files();
+        hook_schedules();
+        hook_settings();
+        hook_shows();
+        hook_streams();
+        hook_users();
+    }, 0);
 });
