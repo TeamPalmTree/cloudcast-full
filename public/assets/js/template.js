@@ -2,6 +2,18 @@
 // BLOCK MODELS //
 //////////////////
 
+// block weight
+var block_weight_model = function (block_weight_js) {
+
+    // members
+    this.weight = ko.observable(1);
+    this.file_query = ko.observable();
+
+    if (block_weight_js)
+        ko.mapping.fromJS(block_weight_js, null, this);
+
+};
+
 // block finder
 var block_finder_model = function () {
 
@@ -27,7 +39,7 @@ var block_form_model = function () {
 
 };
 
-// block layout item
+// block item
 var block_item_model = function (block_layout_model, block_item_js) {
 
     // members
@@ -164,16 +176,40 @@ var block_model = function(block) {
     this.title = ko.observable();
     this.description = ko.observable();
     this.file_query = ko.observable();
-    this.harmonic = ko.observable(true);
+    this.harmonic_key = ko.observable(true);
+    this.harmonic_energy = ko.observable(true);
+    this.weighted = ko.observable();
+    this.block_weights = ko.observableArray();
+
+    // add block criterium
+    this.add_block_weight = function() {
+        this.block_weights.push(new block_weight_model());
+    }.bind(this);
+
+    // remove block criterium
+    this.remove_block_weight = function(block_weight) {
+        this.block_weights.remove(block_weight)
+    }.bind(this);
 
     // initialize
     if (!block)
         return;
+
     // set vars
     this.title(block.title);
     this.description(block.description);
+    this.harmonic_key(block.harmonic_key == '1' ? true : false);
+    this.harmonic_energy(block.harmonic_energy == '1' ? true : false);
     this.file_query(block.file_query);
-    this.harmonic(block.harmonic);
+
+    // set block weights
+    for (var block_weights_index in block.block_weights)
+        this.block_weights.push(new block_weight_model(block.block_weights[block_weights_index]));
+    // if we don't have a block criterium, add one
+    if (block.block_weights.length == 0)
+        this.add_block_weight();
+    else
+        this.weighted(true);
 
 };
 
