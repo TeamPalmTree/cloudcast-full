@@ -206,7 +206,7 @@ var block_model = function(block) {
     for (var block_weights_index in block.block_weights)
         this.block_weights.push(new block_weight_model(block.block_weights[block_weights_index]));
     // if we don't have a block criterium, add one
-    if (block.block_weights.length == 0)
+    if (!block.block_weights || (block.block_weights.length == 0))
         this.add_block_weight();
     else
         this.weighted(true);
