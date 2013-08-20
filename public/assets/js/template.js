@@ -240,7 +240,7 @@ var cloudcast_display_model = function () {
             enabled = this.status().master_input_enabled();
 
         // send off input enabled
-        $.get('/engine/input.rawxml', { input: input, enabled: !enabled });
+        $.get('/engine/enable_input.rawxml', { input: input, enabled: !enabled });
 
     }.bind(this);
 
@@ -352,8 +352,6 @@ var cloudcast_display_model = function () {
         }.bind(this));
     }.bind(this);
 
-    // initialize
-    this.poll();
     // poll engine for status
     setInterval(function() {
         this.poll();
@@ -1091,8 +1089,12 @@ function hook_blocks() {
 // general
 function hook_cloudcast() {
 
+    // create new cc display model
+    var cloudcast_display= new cloudcast_display_model();
     // status display
-    ko.applyBindings(new cloudcast_display_model(), document.getElementById('cloudcast_display'));
+    ko.applyBindings(cloudcast_display, document.getElementById('cloudcast_display'));
+    // poll
+    cloudcast_display.poll();
 
     // initialize modals
     $('.cloudcast_modal-success').modal('hide');
@@ -1182,14 +1184,12 @@ function hook_users() {
 ///////////
 
 $(function() {
-    setTimeout(function() {
-        hook_blocks();
-        hook_cloudcast();
-        hook_files();
-        hook_schedules();
-        hook_settings();
-        hook_shows();
-        hook_streams();
-        hook_users();
-    }, 0);
+    hook_blocks();
+    hook_cloudcast();
+    hook_files();
+    hook_schedules();
+    hook_settings();
+    hook_shows();
+    hook_streams();
+    hook_users();
 });
