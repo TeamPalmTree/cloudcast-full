@@ -352,10 +352,15 @@ var cloudcast_display_model = function () {
         }.bind(this));
     }.bind(this);
 
-    // poll engine for status
-    setInterval(function() {
+    // initialize
+    setTimeout(function() {
+        // initial poll
         this.poll();
-    }.bind(this), 5000);
+        // poll engine for status
+        setInterval(function() {
+            this.poll();
+        }.bind(this), 5000);
+    }.bind(this), 0);
 
 };
 
@@ -1089,12 +1094,8 @@ function hook_blocks() {
 // general
 function hook_cloudcast() {
 
-    // create new cc display model
-    var cloudcast_display= new cloudcast_display_model();
     // status display
-    ko.applyBindings(cloudcast_display, document.getElementById('cloudcast_display'));
-    // poll
-    cloudcast_display.poll();
+    ko.applyBindings(new cloudcast_display_model(), document.getElementById('cloudcast_display'));
 
     // initialize modals
     $('.cloudcast_modal-success').modal('hide');
