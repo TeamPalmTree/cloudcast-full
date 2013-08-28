@@ -175,9 +175,14 @@ var block_model = function(block) {
     // members
     this.title = ko.observable();
     this.description = ko.observable();
+    this.initial_key = ko.observable();
+    this.initial_energy = ko.observable();
+    this.initial_genre = ko.observable();
     this.file_query = ko.observable();
-    this.harmonic_key = ko.observable(true);
-    this.harmonic_energy = ko.observable(true);
+    this.harmonic_key = ko.observable('1');
+    this.harmonic_energy = ko.observable('1');
+    this.harmonic_genre = ko.observable('0');
+    this.separate_similar = ko.observable('1');
     this.weighted = ko.observable();
     this.block_weights = ko.observableArray();
 
@@ -198,8 +203,13 @@ var block_model = function(block) {
     // set vars
     this.title(block.title);
     this.description(block.description);
-    this.harmonic_key(block.harmonic_key == '1' ? true : false);
-    this.harmonic_energy(block.harmonic_energy == '1' ? true : false);
+    this.initial_key(block.initial_key);
+    this.initial_energy(block.initial_energy);
+    this.initial_genre(block.initial_genre);
+    this.harmonic_key(block.harmonic_key);
+    this.harmonic_energy(block.harmonic_energy);
+    this.harmonic_genre(block.harmonic_genre);
+    this.separate_similar(block.separate_similar);
     this.file_query(block.file_query);
 
     // set block weights
@@ -432,7 +442,7 @@ var file_model = function (file) {
     this.label = ko.observable();
     this.language = ko.observable();
     this.mood = ko.observable();
-    this.musical_key = ko.observable();
+    this.key = ko.observable();
     this.energy = ko.observable();
     this.website = ko.observable();
     this.name = ko.observable();
@@ -461,7 +471,7 @@ var file_model = function (file) {
         data.push('<strong>label</strong> ' + this.label());
         data.push('<strong>language</strong> ' + this.language());
         data.push('<strong>mood</strong> ' + this.mood());
-        data.push('<strong>musical_key</strong> ' + this.musical_key());
+        data.push('<strong>key</strong> ' + this.key());
         data.push('<strong>energy</strong> ' + this.energy());
         data.push('<strong>website</strong> ' + this.website());
         data.push('<strong>name</strong> ' + this.name());
