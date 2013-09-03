@@ -362,10 +362,10 @@ var cloudcast_display_model = function () {
         }.bind(this));
     }.bind(this);
 
+    // initial poll
+    this.poll();
     // initialize
     setTimeout(function() {
-        // initial poll
-        this.poll();
         // poll engine for status
         setInterval(function() {
             this.poll();
