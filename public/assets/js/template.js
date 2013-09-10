@@ -512,7 +512,7 @@ var file_viewer_model = function() {
 
     // query
     this.query = function(query) {
-        $.get('/files/search.json', { query: query }, function (data) {
+        $.get('/files/search.json', { query: query, restrict: true }, function (data) {
             // clear existing data
             this.files([]);
             // check for no data
@@ -536,7 +536,7 @@ var files_index_model = function () {
 
     // file finder
     this.query.subscribe(function(value) {
-        $.get('/files/search.json', { query: value }, function (data) {
+        $.get('/files/search.json', { query: value, restrict: false }, function (data) {
             // clear existing data
             this.files([]);
             // check for no data
@@ -923,10 +923,10 @@ var status_model = function (status_js) {
     this.talkover_input_active = ko.observable();
     this.master_input_active = ko.observable();
     // input enableds
-    this.schedule_input_active = ko.observable();
-    this.show_input_active = ko.observable();
-    this.talkover_input_active = ko.observable();
-    this.master_input_active = ko.observable();
+    this.schedule_input_enabled = ko.observable();
+    this.show_input_enabled = ko.observable();
+    this.talkover_input_enabled = ko.observable();
+    this.master_input_enabled = ko.observable();
     // input usernames
     this.show_input_username = ko.observable();
     this.talkover_input_username = ko.observable();
