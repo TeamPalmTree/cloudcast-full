@@ -478,20 +478,6 @@ var file_model = function (file) {
         return data.join('<br />');
     }, this);
 
-    // deactivate
-    this.deactivate = function() {
-        $.get('/files/deactivate.rawxml', { 'id': this.id() }, function () {
-            this.available('0');
-        }.bind(this));
-    }.bind(this);
-
-    // activate
-    this.activate = function() {
-        $.get('/files/activate.rawxml', { 'id': this.id() }, function () {
-            this.available('1');
-        }.bind(this));
-    }.bind(this);
-
     // mapping
     ko.mapping.fromJS(file, null, this);
 
@@ -533,6 +519,11 @@ var files_index_model = function () {
     // members
     this.query = ko.observable();
     this.files = ko.observableArray();
+    this.selected_file_ids = ko.observableArray();
+    // selected files count
+    this.selected_file_ids_count = ko.computed(function() {
+        return this.selected_file_ids().length;
+    }.bind(this));
 
     // file finder
     this.query.subscribe(function(value) {
@@ -554,6 +545,39 @@ var files_index_model = function () {
         this.query('');
     }.bind(this);
 
+    this.select = function() {
+        // first see if we have any files
+        if (this.files().length == 0)
+            return;
+        // get the first file selected status
+        var selected = this.files()[0].selected();
+        // loop through all files and opposite the selected status
+        ko.utils.arrayForEach(this.files(), function(file) {
+            file.selected(!selected);
+        });
+        return true;
+    }.bind(this);
+
+    // deactivate
+    this.deactivate = function() {
+
+        $.post('/files/deactivate.rawxml', { 'ids': this.selected_file_ids() }, function () {
+            // get all of the selected ids
+            ko.utils.arrayForEach(this.files(), function(file) {
+                if (this.selected_file_ids().indexOf(file.id()) >= 0)
+                    file.available('0');
+            }.bind(this));
+        }.bind(this));
+
+    }.bind(this);
+
+    // activate
+    this.activate = function() {
+        $.get('/files/activate.rawxml', { 'id': this.id() }, function () {
+            this.available('1');
+        }.bind(this));
+    }.bind(this);
+
 };
 
 /////////////////////
@@ -570,8 +594,8 @@ var schedule_date_model = function(schedule_date, schedule_index) {
     this.delete = function(schedule) {
 
         // setup modal
-        $('#cloudcast_modal-delete .modal-body').html('Are you sure you want to delete this schedule for show "' + schedule.show.title() + '"?');
-        $('#cloudcast_modal-delete button[name=delete]').off().click(function () {
+        $('#cloudcast-modal-delete .modal-body').html('Are you sure you want to delete this schedule for show "' + schedule.show.title() + '"?');
+        $('#cloudcast-modal-delete button[name=delete]').off().click(function () {
             // remove server side
             $.get('schedules/delete/' + schedule.id() + '.rawxml', function() {
                 // remove locally
@@ -580,12 +604,12 @@ var schedule_date_model = function(schedule_date, schedule_index) {
                 if (this.schedules().length == 0)
                     schedule_index.delete_schedule_date(this);
                 // hide modal
-                $('#cloudcast_modal-delete').modal('hide');
+                $('#cloudcast-modal-delete').modal('hide');
             }.bind(this));
         }.bind(this));
 
         // show modal
-        $('#cloudcast_modal-delete').modal('show');
+        $('#cloudcast-modal-delete').modal('show');
 
     }.bind(this);
 
@@ -767,12 +791,12 @@ var show_form_model = function() {
     };
 
     // set show
-    this.show(new show_model(show_js));
+    this.show(new show_model(show_js, promos_album_js));
 
 };
 
 // show
-var show_model = function(show) {
+var show_model = function(show, promos_album) {
 
     // members
     this.title = ko.observable();
@@ -787,6 +811,12 @@ var show_model = function(show) {
     this.block = ko.observable();
     this.repeat = ko.observable();
     this.show_repeat = ko.observable();
+    this.sweepers = ko.observable();
+    this.jingles = ko.observable();
+    this.bumpers = ko.observable();
+    this.sweepers_album = ko.observable();
+    this.jingles_album = ko.observable();
+    this.bumpers_album = ko.observable();
     this.users = ko.observableArray();
 
     // add username
@@ -830,7 +860,14 @@ var show_model = function(show) {
         this.user_start_on(show.user_start_on);
         this.user_end_at(Helper.datetime_add_duration(show.user_start_on, show.duration));
         this.duration(show.duration);
-
+        // set promos enabled
+        this.sweepers(show.sweepers_album ? true : false);
+        this.jingles(show.jingles_album ? true : false);
+        this.bumpers(show.bumpers_album ? true : false);
+        // set promos albums
+        this.sweepers_album(show.sweepers_album);
+        this.jingles_album(show.jingles_album);
+        this.bumpers_album(show.bumpers_album);
         // if we don't have a repeat, make one
         this.show_repeat(new show_repeat_model(show.show_repeat));
         this.repeated(show.show_repeat ? true : false);
@@ -856,6 +893,14 @@ var show_model = function(show) {
         this.block(new block_model());
         // create a repeat
         this.show_repeat(new show_repeat_model());
+        // set promo albums
+        this.sweepers_album(promos_album);
+        this.jingles_album(promos_album);
+        this.bumpers_album(promos_album);
+        // set promos enabled
+        this.sweepers(true);
+        this.jingles(true);
+        this.bumpers(true);
 
     }
 
@@ -964,9 +1009,9 @@ var streams_index_model = function() {
 
     // delete user
     this.delete = function(stream) {
-        $('#cloudcast_modal-delete .modal-body').html('Are you sure you want to delete the stream "' + stream.name + '"?');
-        $('#cloudcast_modal-delete button[name=delete]').off().click(function () { window.location.replace('/streams/delete/' + stream.id); });
-        $('#cloudcast_modal-delete').modal('show');
+        $('#cloudcast-modal-delete .modal-body').html('Are you sure you want to delete the stream "' + stream.name() + '"?');
+        $('#cloudcast-modal-delete button[name=delete]').off().click(function () { window.location.replace('/streams/delete/' + stream.id()); });
+        $('#cloudcast-modal-delete').modal('show');
     };
 
     // initialize
@@ -1067,9 +1112,9 @@ var users_index_model = function() {
 
     // delete user
     this.delete = function(user) {
-        $('#cloudcast_modal-delete .modal-body').html('Are you sure you want to delete the user "' + user.username + '"?');
-        $('#cloudcast_modal-delete button[name=delete]').off().click(function () { window.location.replace('/users/delete/' + user.username); });
-        $('#cloudcast_modal-delete').modal('show');
+        $('#cloudcast-modal-delete .modal-body').html('Are you sure you want to delete the user "' + user.username + '"?');
+        $('#cloudcast-modal-delete button[name=delete]').off().click(function () { window.location.replace('/users/delete/' + user.username); });
+        $('#cloudcast-modal-delete').modal('show');
     };
 
 };
@@ -1082,21 +1127,21 @@ var users_index_model = function() {
 function hook_blocks() {
 
     // layout
-    var blocks_layout_element = document.getElementById('blocks_layout');
+    var blocks_layout_element = document.getElementById('blocks-layout');
     if (blocks_layout_element)
         ko.applyBindings(new block_layout_model(), blocks_layout_element);
 
     // form
-    var blocks_form_element = document.getElementById('blocks_form');
+    var blocks_form_element = document.getElementById('blocks-form');
     if (blocks_form_element)
         ko.applyBindings(new block_form_model(), blocks_form_element);
 
     // block delete
     $('#blocks_index a[name=delete]').click(function () {
-        $('#cloudcast_modal-delete .modal-body').html('Are you sure you want to delete the block "' + $(this).data('title') + '"?');
+        $('#cloudcast-modal-delete .modal-body').html('Are you sure you want to delete the block "' + $(this).data('title') + '"?');
         var id = $(this).data('id');
-        $('#cloudcast_modal-delete button[name=delete]').off().click(function () { window.location.replace('/blocks/delete/' + id); });
-        $('#cloudcast_modal-delete').modal('show');
+        $('#cloudcast-modal-delete button[name=delete]').off().click(function () { window.location.replace('/blocks/delete/' + id); });
+        $('#cloudcast-modal-delete').modal('show');
     });
 
 }
@@ -1105,12 +1150,12 @@ function hook_blocks() {
 function hook_cloudcast() {
 
     // status display
-    ko.applyBindings(new cloudcast_display_model(), document.getElementById('cloudcast_display'));
+    ko.applyBindings(new cloudcast_display_model(), document.getElementById('cloudcast-display'));
 
     // initialize modals
-    $('.cloudcast_modal-success').modal('hide');
-    $('.cloudcast_modal-error').modal('hide');
-    $('.cloudcast_modal-delete').modal('hide');
+    $('.cloudcast-modal-success').modal('hide');
+    $('.cloudcast-modal-error').modal('hide');
+    $('.cloudcast-modal-delete').modal('hide');
 
 }
 
@@ -1118,7 +1163,7 @@ function hook_cloudcast() {
 function hook_files() {
 
     // index
-    var file_index_element = document.getElementById('files_index');
+    var file_index_element = document.getElementById('files-index');
     if (file_index_element)
         ko.applyBindings(new files_index_model(), file_index_element);
 
@@ -1128,7 +1173,7 @@ function hook_files() {
 function hook_schedules() {
 
     // index
-    var schedules_index_element = document.getElementById('schedules_index');
+    var schedules_index_element = document.getElementById('schedules-index');
     if (schedules_index_element)
         ko.applyBindings(new schedules_index_model(), schedules_index_element);
 
@@ -1138,7 +1183,7 @@ function hook_schedules() {
 function hook_settings() {
 
     // index
-    var settings_index_element = document.getElementById('settings_index');
+    var settings_index_element = document.getElementById('settings-index');
     if (settings_index_element)
         ko.applyBindings(new settings_index_model(), settings_index_element);
 
@@ -1148,16 +1193,16 @@ function hook_settings() {
 function hook_shows() {
 
     // form
-    var shows_form_element = document.getElementById('shows_form');
+    var shows_form_element = document.getElementById('shows-form');
     if (shows_form_element)
         ko.applyBindings(new show_form_model(), shows_form_element);
 
     // show delete
     $('#shows_index a[name=delete]').click(function () {
-        $('#cloudcast_modal-delete .modal-body').html('Are you sure you want to delete the show "' + $(this).data('title') + '"?');
+        $('#cloudcast-modal-delete .modal-body').html('Are you sure you want to delete the show "' + $(this).data('title') + '"?');
         var id = $(this).data('id');
-        $('#cloudcast_modal-delete button[name=delete]').off().click(function () { window.location.replace('/shows/delete/' + id); });
-        $('#cloudcast_modal-delete').modal('show');
+        $('#cloudcast-modal-delete button[name=delete]').off().click(function () { window.location.replace('/shows/delete/' + id); });
+        $('#cloudcast-modal-delete').modal('show');
     });
 
 }
@@ -1166,11 +1211,11 @@ function hook_shows() {
 function hook_streams() {
 
     // index
-    var streams_index_element = document.getElementById('streams_index');
+    var streams_index_element = document.getElementById('streams-index');
     if (streams_index_element)
         ko.applyBindings(new streams_index_model(), streams_index_element);
     // form
-    var stream_form_element = document.getElementById('streams_form');
+    var stream_form_element = document.getElementById('streams-form');
     if (stream_form_element)
         ko.applyBindings(new stream_form_model(), stream_form_element);
 
@@ -1180,11 +1225,11 @@ function hook_streams() {
 function hook_users() {
 
     // index
-    var users_index_element = document.getElementById('users_index');
+    var users_index_element = document.getElementById('users-index');
     if (users_index_element)
         ko.applyBindings(new users_index_model(), users_index_element);
     // form
-    var user_form_element = document.getElementById('user_form');
+    var user_form_element = document.getElementById('user-form');
     if (user_form_element)
         ko.applyBindings(new user_form_model(), user_form_element);
 
