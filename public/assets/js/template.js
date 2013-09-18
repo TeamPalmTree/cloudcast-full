@@ -519,7 +519,7 @@ var file_viewer_model = function() {
 
     // query
     this.query = function(query) {
-        $.get('/files/search.json', { query: query, restrict: true }, function (data) {
+        $.get('/files/search.json', { query: query, restrict: true, randomize: true }, function (data) {
             // clear existing data
             this.files.removeAll();
             // check for no data
@@ -548,7 +548,7 @@ var files_index_model = function () {
 
     // file finder
     this.query.subscribe(function(value) {
-        $.get('/files/search.json', { query: value, restrict: false }, function (data) {
+        $.get('/files/search.json', { query: value, restrict: false, randomize: false }, function (data) {
             // clear existing data
             this.files.removeAll();
             // check for no data
