@@ -145,7 +145,7 @@ var block_layout_model = function () {
         this.block_items.push(block_item);
     }.bind(this);
 
-    this.add_selected_files = function() {
+    this.add_files = function() {
         ko.utils.arrayForEach(this.file_finder.files(), function(file) {
             if (!file.selected())
                 return;
@@ -166,6 +166,9 @@ var block_layout_model = function () {
             return new block_item_model(this, options.data);
         }.bind(this)
     }, this.block_items);
+
+    // initial query
+    this.file_finder.clear();
 
 };
 
@@ -400,7 +403,7 @@ var file_finder_model = function () {
         }.bind(this));
     }.bind(this));
 
-    this.toggle_select = function() {
+    this.select_all = function() {
         if (this.files().length == 0)
             return;
         var selected = !this.files()[0].selected();
@@ -428,6 +431,9 @@ var file_model = function (file) {
     this.track = ko.observable();
     this.BPM = ko.observable();
     this.rating = ko.observable();
+    this.relevance = ko.observable();
+    this.ups = ko.observable();
+    this.downs = ko.observable();
     this.bit_rate = ko.observable();
     this.sample_rate = ko.observable();
     this.duration = ko.observable();
@@ -457,6 +463,9 @@ var file_model = function (file) {
         data.push('<strong>track</strong> ' + this.track());
         data.push('<strong>BPM</strong> ' + this.BPM());
         data.push('<strong>rating</strong> ' + this.rating());
+        data.push('<strong>relevance</strong> ' + this.relevance());
+        data.push('<strong>ups</strong> ' + this.ups());
+        data.push('<strong>downs</strong> ' + this.downs());
         data.push('<strong>bit_rate</strong> ' + this.bit_rate());
         data.push('<strong>sample_rate</strong> ' + this.sample_rate());
         data.push('<strong>duration</strong> ' + this.duration());
@@ -477,6 +486,18 @@ var file_model = function (file) {
         data.push('<strong>name</strong> ' + this.name());
         return data.join('<br />');
     }, this);
+
+    // select file
+    this.select = function() {
+        this.selected(!this.selected());
+    }.bind(this);
+
+    // show info modal
+    this.show_info = function(stream) {
+        $('#cloudcast-modal-info .modal-header').html(this.artist() + ' - ' + this.title());
+        $('#cloudcast-modal-info .modal-body').html(this.description());
+        $('#cloudcast-modal-info').modal('show');
+    }.bind(this);
 
     // mapping
     ko.mapping.fromJS(file, null, this);
@@ -500,10 +521,9 @@ var file_viewer_model = function() {
     this.query = function(query) {
         $.get('/files/search.json', { query: query, restrict: true }, function (data) {
             // clear existing data
-            this.files([]);
+            this.files.removeAll();
             // check for no data
-            if (!data)
-                return;
+            if (!data) return;
             // add files
             ko.utils.arrayForEach(data, function(file) {
                 this.files.push(new file_model(file));
@@ -519,6 +539,7 @@ var files_index_model = function () {
     // members
     this.query = ko.observable();
     this.files = ko.observableArray();
+    this.relevance = ko.observable();
     this.selected_file_ids = ko.observableArray();
     // selected files count
     this.selected_file_ids_count = ko.computed(function() {
@@ -529,13 +550,17 @@ var files_index_model = function () {
     this.query.subscribe(function(value) {
         $.get('/files/search.json', { query: value, restrict: false }, function (data) {
             // clear existing data
-            this.files([]);
+            this.files.removeAll();
             // check for no data
-            if (!data)
-                return;
-            // add files
+            if (!data) return;
+            // add files, add select subscription
             ko.utils.arrayForEach(data, function(file) {
-                this.files.push(new file_model(file));
+                file = new file_model(file);
+                file.selected.subscribe(function(value) {
+                    if (value) { this.selected_file_ids.push(file.id()) }
+                    else { this.selected_file_ids.remove(file.id()) }
+                }, this);
+                this.files.push(file);
             }.bind(this));
         }.bind(this));
     }.bind(this));
@@ -545,38 +570,50 @@ var files_index_model = function () {
         this.query('');
     }.bind(this);
 
-    this.select = function() {
-        // first see if we have any files
-        if (this.files().length == 0)
-            return;
-        // get the first file selected status
-        var selected = this.files()[0].selected();
-        // loop through all files and opposite the selected status
+    // select all
+    this.select_all = function() {
+        // if we have no selected files, select them all
+        var none_selected = (this.selected_file_ids_count() == 0);
         ko.utils.arrayForEach(this.files(), function(file) {
-            file.selected(!selected);
-        });
-        return true;
+            file.selected(none_selected);
+        }.bind(this));
     }.bind(this);
 
     // deactivate
     this.deactivate = function() {
-
         $.post('/files/deactivate.rawxml', { 'ids': this.selected_file_ids() }, function () {
             // get all of the selected ids
             ko.utils.arrayForEach(this.files(), function(file) {
-                if (this.selected_file_ids().indexOf(file.id()) >= 0)
-                    file.available('0');
+                if (file.selected()) file.available('0');
             }.bind(this));
         }.bind(this));
-
     }.bind(this);
 
     // activate
     this.activate = function() {
-        $.get('/files/activate.rawxml', { 'id': this.id() }, function () {
-            this.available('1');
+        $.post('/files/activate.rawxml', { 'ids': this.selected_file_ids() }, function () {
+            // get all of the selected ids
+            ko.utils.arrayForEach(this.files(), function(file) {
+                if (file.selected()) file.available('1');
+            }.bind(this));
         }.bind(this));
     }.bind(this);
+
+    // deactivate
+    this.set_relevance = function() {
+        $.post('/files/set_relevance.rawxml', {
+                'relevance': this.relevance(),
+                'ids': this.selected_file_ids()
+        }, function () {
+            // get all of the selected ids
+            ko.utils.arrayForEach(this.files(), function(file) {
+                if (file.selected()) file.relevance(this.relevance());
+            }.bind(this));
+        }.bind(this));
+    }.bind(this);
+
+    // initial query
+    this.query('');
 
 };
 
@@ -584,51 +621,21 @@ var files_index_model = function () {
 // SCHEDULE MODELS //
 /////////////////////
 
-// schedule date
-var schedule_date_model = function(schedule_date, schedule_index) {
-
-    // members
-    this.schedules = ko.observableArray();
-
-    // delete schedule
-    this.delete = function(schedule) {
-
-        // setup modal
-        $('#cloudcast-modal-delete .modal-body').html('Are you sure you want to delete this schedule for show "' + schedule.show.title() + '"?');
-        $('#cloudcast-modal-delete button[name=delete]').off().click(function () {
-            // remove server side
-            $.get('schedules/delete/' + schedule.id() + '.rawxml', function() {
-                // remove locally
-                this.schedules.remove(schedule);
-                // if we have no more schedules, delete this date
-                if (this.schedules().length == 0)
-                    schedule_index.delete_schedule_date(this);
-                // hide modal
-                $('#cloudcast-modal-delete').modal('hide');
-            }.bind(this));
-        }.bind(this));
-
-        // show modal
-        $('#cloudcast-modal-delete').modal('show');
-
-    }.bind(this);
-
-    // initialize
-    ko.mapping.fromJS(schedule_date, {
-        'schedules': {
-            create: function(options) {
-                return new schedule_model(options.data);
-            }
-        }
-    }, this);
-
-};
-
 // schedule file
 var schedule_file_model = function(schedule_file_js) {
 
+    // members
     this.played_on = ko.observable();
     this.file = ko.observable();
+    this.queued = ko.observable(false);
+    this.selected = ko.observable(false);
+
+    // select
+    this.select = function() {
+        this.selected(!this.selected());
+    }.bind(this);
+
+    // map
     ko.mapping.fromJS(schedule_file_js, null, this);
 
 }
@@ -640,73 +647,187 @@ var schedules_index_model = function() {
     this.schedule_dates = ko.observableArray();
     this.editing_schedule = ko.observable();
     this.file_finder = new file_finder_model();
+    this.selected_schedule_ids = ko.observableArray();
     var original_editing_schedule_files;
-
-    // delete date (when has no content)
-    this.delete_schedule_date = function(schedule_date) {
-        this.schedule_dates.remove(schedule_date);
-    }.bind(this);
+    // selected schedules count
+    this.selected_schedule_ids_count = ko.computed(function() {
+        return this.selected_schedule_ids().length;
+    }.bind(this));
 
     // toggle edit
     this.edit_schedule = function(schedule) {
+
         // get currently editing schedule
         var current_editing_schedule = this.editing_schedule();
         // cancel changes for this edit
-        // by repopulating the origina schedule files
-        if (current_editing_schedule)
+        // by repopulating the original schedule files
+        if (current_editing_schedule) {
             current_editing_schedule.schedule_files(original_editing_schedule_files);
+            current_editing_schedule.editing(false);
+        }
+
         // if the current is the requested, cancel editing
         if (current_editing_schedule == schedule) {
             // cancel all editing
             this.editing_schedule(null);
+            schedule.editing(false);
         } else {
             // backup schedule files
             original_editing_schedule_files = schedule.schedule_files().slice();
             // switch editing to this requested schedule
             this.editing_schedule(schedule);
+            // make sure the schedule is expanded
+            schedule.expanded(true);
+            schedule.editing(true);
         }
+
     }.bind(this);
 
     // save
     this.save_schedule = function(schedule) {
-        var schedule_files = new Array();
+
+        var file_ids = new Array();
         // get DTO for schedule file changes
         ko.utils.arrayForEach(schedule.schedule_files(), function(schedule_file) {
-            schedule_files.push({ 'file_id': schedule_file.file().id() })
+            file_ids.push(schedule_file.file().id());
         });
+
         // post DTO for saving
-        $.post('schedules/save.rawxml', { 'id': schedule.id(), 'schedule_files': schedule_files }, function(response) {
+        $.post('schedules/save.rawxml', { 'id': schedule.id(), 'file_ids': file_ids }, function(response) {
+
+            var message;
             // verify response
-            if (response != 'SUCCESS')
-                return;
+            switch (response) {
+                case 'SCHEDULE_NOT_FOUND':
+                    message = 'Schedule not found. Please refresh page and try again.';
+                    break;
+                case 'SCHEDULE_OUT_OF_SYNC':
+                    message = 'Schedule out of sync. Please refresh page and try again.';
+                    break;
+            }
+
+            // if message, show
+            if (message) {
+                $('#cloudcast-modal-error .modal-body').html(message);
+                $('#cloudcast-modal-delete').modal('show');
+            }
+
             // turn off editing
             this.editing_schedule(null);
+            schedule.editing(false);
+
         }.bind(this));
+
     }.bind(this);
 
     // bind to file finder add button
-    this.add_selected_files = function() {
+    this.add_files = function() {
+
         // get currently editing schedule
         var current_editing_schedule = this.editing_schedule();
         // verify we have a schedule under edit
         if (!current_editing_schedule)
             return;
+
+        var insertion_schedule_files_index = 0;
+        // first find the first selected item in our list
+        $.each(current_editing_schedule.schedule_files(), function(schedule_file_index, schedule_file) {
+            if (schedule_file.selected())
+                insertion_schedule_files_index = schedule_file_index;
+        });
+        // up by one to insert next
+        insertion_schedule_files_index += 1;
+
+        var schedule_files = new Array();
         // add each selected file as a schedule file
+        // at the next index
         ko.utils.arrayForEach(this.file_finder.files(), function(file) {
-            if (!file.selected())
-                return;
+            if (!file.selected()) return;
             var schedule_file = new schedule_file_model();
             schedule_file.file(file);
-            current_editing_schedule.schedule_files.push(schedule_file);
+            current_editing_schedule.schedule_files.splice(insertion_schedule_files_index, 0, schedule_file);
+            insertion_schedule_files_index++;
+        }.bind(this));
+
+    }.bind(this);
+
+    // focus schedule under edit
+    this.focus_editing_schedule = function() {
+        this.editing_schedule().focused(true);
+    }.bind(this);
+
+    // select all schedules
+    this.select_all = function() {
+        // if we have no selected schedules, select them all
+        var none_selected = (this.selected_schedule_ids_count() == 0);
+        ko.utils.arrayForEach(this.schedule_dates(), function(schedule_date) {
+            ko.utils.arrayForEach(schedule_date.schedules(), function(schedule) {
+                schedule.selected(none_selected);
+            }.bind(this));
+        }.bind(this));
+    }.bind(this);
+
+    // deactivate schedules
+    this.deactivate = function() {
+        $.post('/schedules/deactivate.rawxml', { 'ids': this.selected_schedule_ids() }, function () {
+
+            var obsolete_schedule_dates = new Array();
+            // remove selected schedules
+            ko.utils.arrayForEach(this.schedule_dates(), function(schedule_date) {
+                var selected_schedules = new Array();
+                ko.utils.arrayForEach(schedule_date.schedules(), function(schedule) {
+                    // if the schedule is selected
+                    if (!schedule.selected()) return;
+                    // remove it from the selected list, save for later removal
+                    this.selected_schedule_ids.remove(schedule.id);
+                    selected_schedules.push(schedule);
+                }.bind(this));
+
+                // remove all selected schedules
+                schedule_date.schedules.removeAll(selected_schedules);
+                // if we have no more schedules, delete this date
+                if (schedule_date.schedules().length == 0)
+                    obsolete_schedule_dates.push(schedule_date);
+
+            }.bind(this));
+            // remove obsolete schedule dates (all schedules removed)
+            this.schedule_dates.removeAll(obsolete_schedule_dates);
+
         }.bind(this));
     }.bind(this);
 
     // set schedule dates
     ko.mapping.fromJS(schedule_dates_js, {
         create: function(options) {
-            return new schedule_date_model(options.data, this);
+            return new schedule_index_date_model(options.data, this);
         }.bind(this)
     }, this.schedule_dates);
+
+    // run initial query
+    this.file_finder.clear();
+
+};
+
+// schedule index date
+var schedule_index_date_model = function(schedule_date, schedule_index) {
+
+    // members
+    this.schedules = ko.observableArray();
+
+    // initialize
+    ko.mapping.fromJS(schedule_date, {
+        'schedules': {
+            create: function(options) {
+                var schedule = new schedule_model(options.data);
+                //  add select subscription
+                schedule.selected.subscribe(function(value) {
+                    if (value) { schedule_index.selected_schedule_ids.push(schedule.id()) }
+                    else { schedule_index.selected_schedule_ids.remove(schedule.id()) }
+                });
+                return schedule;
+            }
+        }
+    }, this);
 
 };
 
@@ -716,6 +837,14 @@ var schedule_model = function(schedule) {
     // members
     this.schedule_files = ko.observableArray();
     this.editing = ko.observable(false);
+    this.selected = ko.observable(false);
+    this.focused = ko.observable(false);
+    this.expanded = ko.observable(false);
+    this.selected_schedule_file_ids = ko.observableArray();
+    // selected schedule files count
+    this.selected_schedule_file_ids_count = ko.computed(function() {
+        return this.selected_schedule_file_ids().length;
+    }.bind(this));
 
     // duration amongst all files
     this.total_duration = ko.computed(function() {
@@ -741,16 +870,60 @@ var schedule_model = function(schedule) {
         return Helper.calculate_duration(total_hours, total_minutes, total_seconds);
     }.bind(this));
 
-    // delete file
-    this.delete_file = function(schedule_file) {
-        this.schedule_files.remove(schedule_file);
+    // editing subscription
+    this.editing.subscribe(function(value) {
+        // if we are cancelling edit
+        if (value) return;
+        // unselect everything
+        ko.utils.arrayForEach(this.schedule_files(), function(schedule_file) {
+            if (schedule_file.selected()) schedule_file.selected(false);
+        }.bind(this));
+    }.bind(this));
+
+    // select all schedule files
+    this.select_all = function() {
+        // if we have no selected schedule files, select them all
+        var none_selected = (this.selected_schedule_file_ids_count() == 0);
+        ko.utils.arrayForEach(this.schedule_files(), function(schedule_file) {
+            schedule_file.selected(none_selected);
+        }.bind(this));
+    }.bind(this);
+
+    // remove files
+    this.remove = function() {
+        var selected_schedule_files = new Array();
+        ko.utils.arrayForEach(this.schedule_files(), function(schedule_file) {
+            // if the schedule file is selected
+            if (!schedule_file.selected()) return;
+            // remove it from the selected list, save for later removal
+            this.selected_schedule_file_ids.remove(schedule_file.id);
+            selected_schedule_files.push(schedule_file);
+        }.bind(this));
+        // remove all selected schedule files
+        this.schedule_files.removeAll(selected_schedule_files);
+    }.bind(this);
+
+    // expand/collapse
+    this.expand_collapse = function() {
+        this.expanded(!this.expanded());
+    }.bind(this);
+
+    // select
+    this.select = function() {
+        this.selected(!this.selected());
     }.bind(this);
 
     // mapping
     ko.mapping.fromJS(schedule, {
         'schedule_files': {
             create: function(options) {
-                return new schedule_file_model(options.data);
+                var schedule_file = new schedule_file_model(options.data);
+                //  add select subscription
+                schedule_file.selected.subscribe(function(value) {
+                    if (value) { this.selected_schedule_file_ids.push(schedule_file.id()) }
+                    else { this.selected_schedule_file_ids.remove(schedule_file.id()) }
+                }.bind(this));
+                return schedule_file;
             }.bind(this)
         }
     }, this);
@@ -1137,10 +1310,9 @@ function hook_blocks() {
         ko.applyBindings(new block_form_model(), blocks_form_element);
 
     // block delete
-    $('#blocks_index a[name=delete]').click(function () {
+    $('#blocks-index a[name=delete]').click(function () {
         $('#cloudcast-modal-delete .modal-body').html('Are you sure you want to delete the block "' + $(this).data('title') + '"?');
-        var id = $(this).data('id');
-        $('#cloudcast-modal-delete button[name=delete]').off().click(function () { window.location.replace('/blocks/delete/' + id); });
+        $('#cloudcast-modal-delete button[name=delete]').off().click(function () { window.location.replace('/blocks/delete/' + $(this).data('id')); });
         $('#cloudcast-modal-delete').modal('show');
     });
 
@@ -1198,7 +1370,7 @@ function hook_shows() {
         ko.applyBindings(new show_form_model(), shows_form_element);
 
     // show delete
-    $('#shows_index a[name=delete]').click(function () {
+    $('#shows-index a[name=delete]').click(function () {
         $('#cloudcast-modal-delete .modal-body').html('Are you sure you want to delete the show "' + $(this).data('title') + '"?');
         var id = $(this).data('id');
         $('#cloudcast-modal-delete button[name=delete]').off().click(function () { window.location.replace('/shows/delete/' + id); });
