@@ -540,11 +540,7 @@ var files_index_model = function () {
     this.query = ko.observable();
     this.files = ko.observableArray();
     this.relevance = ko.observable();
-    this.selected_file_ids = ko.observableArray();
-    // selected files count
-    this.selected_file_ids_count = ko.computed(function() {
-        return this.selected_file_ids().length;
-    }.bind(this));
+    this.selected_files_count = ko.observable(0);
 
     // file finder
     this.query.subscribe(function(value) {
@@ -556,9 +552,10 @@ var files_index_model = function () {
             // add files, add select subscription
             ko.utils.arrayForEach(data, function(file) {
                 file = new file_model(file);
+                // add selected count subscription
                 file.selected.subscribe(function(value) {
-                    if (value) { this.selected_file_ids.push(file.id()) }
-                    else { this.selected_file_ids.remove(file.id()) }
+                    if (value) { this.selected_files_count(this.selected_files_count() + 1); }
+                    else { this.selected_files_count(this.selected_files_count() - 1); }
                 }, this);
                 this.files.push(file);
             }.bind(this));
@@ -573,7 +570,7 @@ var files_index_model = function () {
     // select all
     this.select_all = function() {
         // if we have no selected files, select them all
-        var none_selected = (this.selected_file_ids_count() == 0);
+        var none_selected = (this.selected_files_count() == 0);
         ko.utils.arrayForEach(this.files(), function(file) {
             file.selected(none_selected);
         }.bind(this));
@@ -581,7 +578,7 @@ var files_index_model = function () {
 
     // deactivate
     this.deactivate = function() {
-        $.post('/files/deactivate.rawxml', { 'ids': this.selected_file_ids() }, function () {
+        $.post('/files/deactivate.rawxml', { 'ids': this.get_selected_file_ids() }, function () {
             // get all of the selected ids
             ko.utils.arrayForEach(this.files(), function(file) {
                 if (file.selected()) file.available('0');
@@ -591,7 +588,7 @@ var files_index_model = function () {
 
     // activate
     this.activate = function() {
-        $.post('/files/activate.rawxml', { 'ids': this.selected_file_ids() }, function () {
+        $.post('/files/activate.rawxml', { 'ids': this.get_selected_file_ids() }, function () {
             // get all of the selected ids
             ko.utils.arrayForEach(this.files(), function(file) {
                 if (file.selected()) file.available('1');
@@ -603,13 +600,23 @@ var files_index_model = function () {
     this.set_relevance = function() {
         $.post('/files/set_relevance.rawxml', {
                 'relevance': this.relevance(),
-                'ids': this.selected_file_ids()
+                'ids': this.get_selected_file_ids()
         }, function () {
             // get all of the selected ids
             ko.utils.arrayForEach(this.files(), function(file) {
                 if (file.selected()) file.relevance(this.relevance());
             }.bind(this));
         }.bind(this));
+    }.bind(this);
+
+    this.get_selected_file_ids = function() {
+        var selected_file_ids = new Array();
+        // get all selected file ids
+        ko.utils.arrayForEach(this.files(), function(file) {
+            if (!file.selected()) return;
+            selected_file_ids.push(file.id());
+        });
+        return selected_file_ids;
     }.bind(this);
 
     // initial query
@@ -647,26 +654,31 @@ var schedules_index_model = function() {
     this.schedule_dates = ko.observableArray();
     this.editing_schedule = ko.observable();
     this.file_finder = new file_finder_model();
-    this.selected_schedule_ids = ko.observableArray();
+    this.selected_schedules_count = ko.observable(0);
     var original_editing_schedule_files;
-    // selected schedules count
-    this.selected_schedule_ids_count = ko.computed(function() {
-        return this.selected_schedule_ids().length;
-    }.bind(this));
 
     // toggle edit
     this.edit_schedule = function(schedule) {
 
         // get currently editing schedule
         var current_editing_schedule = this.editing_schedule();
-        // cancel changes for this edit
-        // by repopulating the original schedule files
+
+        // if we are currently editing
         if (current_editing_schedule) {
+            // repopulate the original schedule files
             current_editing_schedule.schedule_files(original_editing_schedule_files);
+            // cancel editing
             current_editing_schedule.editing(false);
+        } else {
+            // we are about to edit, deselect all schedules (avoid confusion)
+            ko.utils.arrayForEach(this.schedule_dates(), function(schedule_date) {
+                ko.utils.arrayForEach(schedule_date.schedules(), function(schedule) {
+                    if (schedule.selected()) schedule.selected(false);
+                }.bind(this));
+            }.bind(this));
         }
 
-        // if the current is the requested, cancel editing
+        // if the current is the requested to edit
         if (current_editing_schedule == schedule) {
             // cancel all editing
             this.editing_schedule(null);
@@ -676,7 +688,7 @@ var schedules_index_model = function() {
             original_editing_schedule_files = schedule.schedule_files().slice();
             // switch editing to this requested schedule
             this.editing_schedule(schedule);
-            // make sure the schedule is expanded
+            // make sure the schedule is expanded & editing
             schedule.expanded(true);
             schedule.editing(true);
         }
@@ -732,19 +744,25 @@ var schedules_index_model = function() {
         var insertion_schedule_files_index = 0;
         // first find the first selected item in our list
         $.each(current_editing_schedule.schedule_files(), function(schedule_file_index, schedule_file) {
-            if (schedule_file.selected())
-                insertion_schedule_files_index = schedule_file_index;
+            if (schedule_file.selected()) insertion_schedule_files_index = schedule_file_index + 1;
         });
-        // up by one to insert next
-        insertion_schedule_files_index += 1;
+        // if there are no schedule files, add to end
+        if (insertion_schedule_files_index == 0)
+            insertion_schedule_files_index = current_editing_schedule.schedule_files().length;
 
         var schedule_files = new Array();
-        // add each selected file as a schedule file
-        // at the next index
+        // add each selected file as a schedule file at the next index
         ko.utils.arrayForEach(this.file_finder.files(), function(file) {
             if (!file.selected()) return;
+            // setup file
             var schedule_file = new schedule_file_model();
             schedule_file.file(file);
+            //  selected count subscription
+            schedule_file.selected.subscribe(function(value) {
+                if (value) { current_editing_schedule.selected_schedule_files_count(current_editing_schedule.selected_schedule_files_count() + 1); }
+                else { current_editing_schedule.selected_schedule_files_count(current_editing_schedule.selected_schedule_files_count() - 1); }
+            });
+            // insert file at insertion index
             current_editing_schedule.schedule_files.splice(insertion_schedule_files_index, 0, schedule_file);
             insertion_schedule_files_index++;
         }.bind(this));
@@ -759,7 +777,7 @@ var schedules_index_model = function() {
     // select all schedules
     this.select_all = function() {
         // if we have no selected schedules, select them all
-        var none_selected = (this.selected_schedule_ids_count() == 0);
+        var none_selected = (this.selected_schedules_count() == 0);
         ko.utils.arrayForEach(this.schedule_dates(), function(schedule_date) {
             ko.utils.arrayForEach(schedule_date.schedules(), function(schedule) {
                 schedule.selected(none_selected);
@@ -769,7 +787,17 @@ var schedules_index_model = function() {
 
     // deactivate schedules
     this.deactivate = function() {
-        $.post('/schedules/deactivate.rawxml', { 'ids': this.selected_schedule_ids() }, function () {
+
+        var selected_schedule_ids = new Array();
+        // get all selected schedule ids
+        ko.utils.arrayForEach(this.schedule_dates(), function(schedule_date) {
+            ko.utils.arrayForEach(schedule_date.schedules(), function(schedule) {
+                if (!schedule.selected()) return;
+                selected_schedule_ids.push(schedule.id());
+            }.bind(this));
+        }.bind(this));
+
+        $.post('/schedules/deactivate.rawxml', { 'ids': selected_schedule_ids }, function () {
 
             var obsolete_schedule_dates = new Array();
             // remove selected schedules
@@ -779,7 +807,7 @@ var schedules_index_model = function() {
                     // if the schedule is selected
                     if (!schedule.selected()) return;
                     // remove it from the selected list, save for later removal
-                    this.selected_schedule_ids.remove(schedule.id);
+                    this.selected_schedules_count(this.selected_schedules_count - 1);
                     selected_schedules.push(schedule);
                 }.bind(this));
 
@@ -819,10 +847,10 @@ var schedule_index_date_model = function(schedule_date, schedule_index) {
         'schedules': {
             create: function(options) {
                 var schedule = new schedule_model(options.data);
-                //  add select subscription
+                //  selected count subscription
                 schedule.selected.subscribe(function(value) {
-                    if (value) { schedule_index.selected_schedule_ids.push(schedule.id()) }
-                    else { schedule_index.selected_schedule_ids.remove(schedule.id()) }
+                    if (value) { schedule_index.selected_schedules_count(schedule_index.selected_schedules_count() + 1); }
+                    else { schedule_index.selected_schedules_count(schedule_index.selected_schedules_count() - 1); }
                 });
                 return schedule;
             }
@@ -840,11 +868,7 @@ var schedule_model = function(schedule) {
     this.selected = ko.observable(false);
     this.focused = ko.observable(false);
     this.expanded = ko.observable(false);
-    this.selected_schedule_file_ids = ko.observableArray();
-    // selected schedule files count
-    this.selected_schedule_file_ids_count = ko.computed(function() {
-        return this.selected_schedule_file_ids().length;
-    }.bind(this));
+    this.selected_schedule_files_count = ko.observable(0);
 
     // duration amongst all files
     this.total_duration = ko.computed(function() {
@@ -874,16 +898,19 @@ var schedule_model = function(schedule) {
     this.editing.subscribe(function(value) {
         // if we are cancelling edit
         if (value) return;
-        // unselect everything
+        // deselect everything
         ko.utils.arrayForEach(this.schedule_files(), function(schedule_file) {
             if (schedule_file.selected()) schedule_file.selected(false);
         }.bind(this));
+        // return selected schedule files count to zero
+        // as we may have removed some files
+        this.selected_schedule_files_count(0);
     }.bind(this));
 
     // select all schedule files
     this.select_all = function() {
         // if we have no selected schedule files, select them all
-        var none_selected = (this.selected_schedule_file_ids_count() == 0);
+        var none_selected = (this.selected_schedule_files_count() == 0);
         ko.utils.arrayForEach(this.schedule_files(), function(schedule_file) {
             schedule_file.selected(none_selected);
         }.bind(this));
@@ -895,8 +922,8 @@ var schedule_model = function(schedule) {
         ko.utils.arrayForEach(this.schedule_files(), function(schedule_file) {
             // if the schedule file is selected
             if (!schedule_file.selected()) return;
-            // remove it from the selected list, save for later removal
-            this.selected_schedule_file_ids.remove(schedule_file.id);
+            // remove it from the selected count, save for later removal
+            this.selected_schedule_files_count(this.selected_schedule_files_count() - 1);
             selected_schedule_files.push(schedule_file);
         }.bind(this));
         // remove all selected schedule files
@@ -920,8 +947,8 @@ var schedule_model = function(schedule) {
                 var schedule_file = new schedule_file_model(options.data);
                 //  add select subscription
                 schedule_file.selected.subscribe(function(value) {
-                    if (value) { this.selected_schedule_file_ids.push(schedule_file.id()) }
-                    else { this.selected_schedule_file_ids.remove(schedule_file.id()) }
+                    if (value) { this.selected_schedule_files_count(this.selected_schedule_files_count() + 1); }
+                    else { this.selected_schedule_files_count(this.selected_schedule_files_count() - 1); }
                 }.bind(this));
                 return schedule_file;
             }.bind(this)
