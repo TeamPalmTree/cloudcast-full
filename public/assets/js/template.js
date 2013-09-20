@@ -295,6 +295,11 @@ var cloudcast_display_model = function () {
             var current_file_duration = this.status().current_file_duration();
             // get the seconds of the file duration
             var current_file_duration_seconds = Helper.duration_seconds(current_file_duration);
+            // get remaining seconds
+            var current_file_remaining_seconds = current_file_duration_seconds - current_file_elapsed_seconds;
+            // get the duration of the remaining seconds
+            var current_file_remaining = Helper.seconds_duration(current_file_remaining_seconds);
+            this.status().current_file_remaining(current_file_remaining);
             // calculate file percentage complete
             var current_file_percentage = (current_file_elapsed_seconds / current_file_duration_seconds) * 100;
             this.status().current_file_percentage(current_file_percentage);
@@ -327,6 +332,11 @@ var cloudcast_display_model = function () {
             var current_show_duration = this.status().current_show_duration();
             // get the seconds of the show duration
             var current_show_duration_seconds = Helper.duration_seconds(current_show_duration);
+            // get remaining seconds
+            var current_show_remaining_seconds = current_show_duration_seconds - current_show_elapsed_seconds;
+            // get the duration of the remaining seconds
+            var current_show_remaining = Helper.seconds_duration(current_show_remaining_seconds);
+            this.status().current_show_remaining(current_show_remaining);
             // calculate file percentage complete
             var current_show_percentage = (current_show_elapsed_seconds / current_show_duration_seconds) * 100;
             this.status().current_show_percentage(current_show_percentage);
@@ -1160,7 +1170,9 @@ var status_model = function (status_js) {
     this.current_file_percentage = ko.observable();
     this.current_show_percentage = ko.observable();
     this.current_file_elapsed = ko.observable();
+    this.current_file_remaining = ko.observable();
     this.current_show_elapsed = ko.observable();
+    this.current_show_remaining = ko.observable();
     this.updated_on_time = ko.observable();
     // input statuses
     this.schedule_input_active = ko.observable();
