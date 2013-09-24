@@ -233,8 +233,8 @@ var block_model = function(block) {
 // cloudcast display
 var cloudcast_display_model = function () {
 
-    // loop interval
-    var loop_set_interval;
+    // poll interval
+    var poll_inverval;
     // members
     this.status = ko.observable();
 
@@ -303,6 +303,15 @@ var cloudcast_display_model = function () {
             // calculate file percentage complete
             var current_file_percentage = (current_file_elapsed_seconds / current_file_duration_seconds) * 100;
             this.status().current_file_percentage(current_file_percentage);
+            // get the seconds of the file post
+            if (this.status().current_file_post()) {
+                var current_file_post_seconds = Helper.duration_seconds(this.status().current_file_post());
+                // calculate file post percentage
+                var current_file_post_percentage = (current_file_post_seconds / current_file_duration_seconds) * 100;
+                this.status().current_file_post_percentage(current_file_post_percentage);
+            } else {
+                this.status().current_file_post_percentage(0);
+            }
 
         } else {
 
@@ -354,7 +363,7 @@ var cloudcast_display_model = function () {
         $.get('/engine/status.json', null, function (status_js) {
 
             // clear existing loop interval
-            clearInterval(loop_set_interval);
+            clearInterval(poll_inverval);
             // update status object
             if (!this.status())
                 this.status(new status_model(status_js));
@@ -365,7 +374,7 @@ var cloudcast_display_model = function () {
             // do initial loop update
             this.loop(seconds);
             // create new loop interval
-            loop_set_interval = setInterval(function() {
+            poll_inverval = setInterval(function() {
                 // update seconds
                 seconds += 1;
                 // execute the loop
@@ -375,15 +384,12 @@ var cloudcast_display_model = function () {
         }.bind(this));
     }.bind(this);
 
+    // poll engine for status
+    setInterval(function() {
+        this.poll();
+    }.bind(this), 5000);
     // initial poll
     this.poll();
-    // initialize
-    setTimeout(function() {
-        // poll engine for status
-        setInterval(function() {
-            this.poll();
-        }.bind(this), 5000);
-    }.bind(this), 0);
 
 };
 
@@ -447,6 +453,7 @@ var file_model = function (file) {
     this.bit_rate = ko.observable();
     this.sample_rate = ko.observable();
     this.duration = ko.observable();
+    this.post = ko.observable();
     this.title = ko.observable();
     this.album = ko.observable();
     this.artist = ko.observable();
@@ -479,6 +486,7 @@ var file_model = function (file) {
         data.push('<strong>bit_rate</strong> ' + this.bit_rate());
         data.push('<strong>sample_rate</strong> ' + this.sample_rate());
         data.push('<strong>duration</strong> ' + this.duration());
+        data.push('<strong>post</strong> ' + this.post());
         data.push('<strong>title</strong> ' + this.title());
         data.push('<strong>album</strong> ' + this.album());
         data.push('<strong>artist</strong> ' + this.artist());
@@ -550,6 +558,8 @@ var files_index_model = function () {
     this.query = ko.observable();
     this.files = ko.observableArray();
     this.relevance = ko.observable();
+    this.post = ko.observable();
+    this.set_mode = ko.observable(null);
     this.selected_files_count = ko.observable(0);
 
     // file finder
@@ -599,24 +609,46 @@ var files_index_model = function () {
     // activate
     this.activate = function() {
         $.post('/files/activate.rawxml', { 'ids': this.get_selected_file_ids() }, function () {
-            // get all of the selected ids
             ko.utils.arrayForEach(this.files(), function(file) {
                 if (file.selected()) file.available('1');
             }.bind(this));
         }.bind(this));
     }.bind(this);
 
-    // deactivate
+    // select all
+    this.toggle_set_mode = function(set_mode) {
+        if (this.set_mode() == set_mode)
+            this.set_mode(null);
+        else
+            this.set_mode(set_mode);
+    }.bind(this);
+
+    // set relevance
     this.set_relevance = function() {
         $.post('/files/set_relevance.rawxml', {
                 'relevance': this.relevance(),
                 'ids': this.get_selected_file_ids()
         }, function () {
-            // get all of the selected ids
             ko.utils.arrayForEach(this.files(), function(file) {
                 if (file.selected()) file.relevance(this.relevance());
             }.bind(this));
         }.bind(this));
+        // turn off set mode
+        this.set_mode(null);
+    }.bind(this);
+
+    // set post
+    this.set_post = function() {
+        $.post('/files/set_post.rawxml', {
+            'post': this.post(),
+            'ids': this.get_selected_file_ids()
+        }, function () {
+            ko.utils.arrayForEach(this.files(), function(file) {
+                if (file.selected()) file.post(this.post());
+            }.bind(this));
+        }.bind(this));
+        // turn off set mode
+        this.set_mode(null);
     }.bind(this);
 
     this.get_selected_file_ids = function() {
@@ -638,12 +670,36 @@ var files_index_model = function () {
 // SCHEDULE MODELS //
 /////////////////////
 
+// schedules index date
+var schedule_date_model = function(schedule_date, schedule_index) {
+
+    // members
+    this.schedules = ko.observableArray();
+
+    // initialize
+    ko.mapping.fromJS(schedule_date, {
+        'schedules': {
+            create: function(options) {
+                var schedule = new schedule_model(options.data);
+                //  selected count subscription
+                schedule.selected.subscribe(function(value) {
+                    if (value) { schedule_index.selected_schedules_count(schedule_index.selected_schedules_count() + 1); }
+                    else { schedule_index.selected_schedules_count(schedule_index.selected_schedules_count() - 1); }
+                });
+                return schedule;
+            }
+        }
+    }, this);
+
+};
+
 // schedule file
 var schedule_file_model = function(schedule_file_js) {
 
     // members
     this.played_on = ko.observable();
     this.file = ko.observable();
+    this.focused = ko.observable(false);
     this.queued = ko.observable(false);
     this.selected = ko.observable(false);
 
@@ -665,7 +721,11 @@ var schedules_index_model = function() {
     this.editing_schedule = ko.observable();
     this.file_finder = new file_finder_model();
     this.selected_schedules_count = ko.observable(0);
+    this.auto_refresh = ko.observable(false);
+    this.auto_focus = ko.observable(true);
     var original_editing_schedule_files;
+    var original_auto_refresh;
+    var refresh_interval;
 
     // toggle edit
     this.edit_schedule = function(schedule) {
@@ -675,25 +735,39 @@ var schedules_index_model = function() {
 
         // if we are currently editing
         if (current_editing_schedule) {
+
             // repopulate the original schedule files
             current_editing_schedule.schedule_files(original_editing_schedule_files);
             // cancel editing
             current_editing_schedule.editing(false);
+
         } else {
+
             // we are about to edit, deselect all schedules (avoid confusion)
             ko.utils.arrayForEach(this.schedule_dates(), function(schedule_date) {
                 ko.utils.arrayForEach(schedule_date.schedules(), function(schedule) {
                     if (schedule.selected()) schedule.selected(false);
                 }.bind(this));
             }.bind(this));
+
+            // save auto-refresh status
+            original_auto_refresh = this.auto_refresh();
+            // set auto-refresh off
+            if (original_auto_refresh) this.auto_refresh(false);
+
         }
 
         // if the current is the requested to edit
         if (current_editing_schedule == schedule) {
+
             // cancel all editing
             this.editing_schedule(null);
             schedule.editing(false);
+            // set auto-refresh back to original state
+            if (original_auto_refresh) this.auto_refresh(true);
+
         } else {
+
             // backup schedule files
             original_editing_schedule_files = schedule.schedule_files().slice();
             // switch editing to this requested schedule
@@ -701,6 +775,7 @@ var schedules_index_model = function() {
             // make sure the schedule is expanded & editing
             schedule.expanded(true);
             schedule.editing(true);
+
         }
 
     }.bind(this);
@@ -834,38 +909,101 @@ var schedules_index_model = function() {
         }.bind(this));
     }.bind(this);
 
+    this.toggle_auto_refresh = function() {
+        // flip auto-refresh
+        this.auto_refresh(!this.auto_refresh());
+    }.bind(this);
+
+    this.auto_refresh.subscribe(function(value) {
+        // if refresh enabled
+        if (!value) {
+            // clear interval
+            clearInterval(refresh_interval);
+        } else {
+            // refresh at interval
+            refresh_interval = setInterval(function() {
+                this.refresh();
+            }.bind(this), 5000);
+        }
+    }.bind(this));
+
+    this.toggle_auto_focus = function() {
+        // flip auto-focus
+        this.auto_focus(!this.auto_focus());
+    };
+
+    this.refresh = function() {
+        $.post('/schedules/dates.json', function (schedule_dates) {
+
+            var selected_schedule_ids = new Array();
+            var expanded_schedule_ids = new Array();
+            // remember all of the currently selected and expanded schedules
+            ko.utils.arrayForEach(this.schedule_dates(), function(schedule_date) {
+                ko.utils.arrayForEach(schedule_date.schedules(), function(schedule) {
+                    if (schedule.selected()) selected_schedule_ids.push(schedule.id());
+                    if (schedule.expanded()) expanded_schedule_ids.push(schedule.id());
+                });
+            });
+
+            // reset selected count
+            this.selected_schedules_count(0);
+            // update schedule dates array
+            ko.mapping.fromJS(schedule_dates, {
+                create: function(options) {
+                    var schedule_date = new schedule_date_model(options.data, this);
+                    ko.utils.arrayForEach(schedule_date.schedules(), function(schedule) {
+                        if (selected_schedule_ids.indexOf(schedule.id()) >= 0) schedule.selected(true);
+                        if (expanded_schedule_ids.indexOf(schedule.id()) >= 0) schedule.expanded(true);
+                    });
+                    return schedule_date;
+                }.bind(this)
+            }, this.schedule_dates);
+
+            // auto-focus
+            if (this.auto_focus())
+                this.focus();
+
+        }.bind(this));
+    };
+
+    // expand top schedule and focus queued
+    this.focus = function() {
+
+        // first make sure we have schedules
+        if (this.schedule_dates().length == 0)
+            return;
+
+        // get first schedule
+        var first_schedule = this.schedule_dates()[0].schedules()[0];
+
+        var queued_schedule_files = new Array();
+        // get first schedule file
+        ko.utils.arrayForEach(first_schedule.schedule_files(), function(schedule_file) {
+            if (schedule_file.queued() == '1') queued_schedule_files.push(schedule_file);
+        });
+        // if we didn't find one, we are done
+        if (queued_schedule_files.length == 0)
+            return;
+
+        // get the third last
+        var third_last_queued_schedule_files = queued_schedule_files.slice(-3)[0];
+        // ensure expansion & focus
+        first_schedule.expanded(true);
+        third_last_queued_schedule_files.focused(true);
+
+    }.bind(this);
+
     // set schedule dates
     ko.mapping.fromJS(schedule_dates_js, {
         create: function(options) {
-            return new schedule_index_date_model(options.data, this);
+            return new schedule_date_model(options.data, this);
         }.bind(this)
     }, this.schedule_dates);
 
     // run initial query
     this.file_finder.clear();
-
-};
-
-// schedule index date
-var schedule_index_date_model = function(schedule_date, schedule_index) {
-
-    // members
-    this.schedules = ko.observableArray();
-
-    // initialize
-    ko.mapping.fromJS(schedule_date, {
-        'schedules': {
-            create: function(options) {
-                var schedule = new schedule_model(options.data);
-                //  selected count subscription
-                schedule.selected.subscribe(function(value) {
-                    if (value) { schedule_index.selected_schedules_count(schedule_index.selected_schedules_count() + 1); }
-                    else { schedule_index.selected_schedules_count(schedule_index.selected_schedules_count() - 1); }
-                });
-                return schedule;
-            }
-        }
-    }, this);
+    // enable auto-refresh
+    this.auto_refresh(true);
 
 };
 
@@ -1024,7 +1162,9 @@ var show_model = function(show, promos_album) {
     this.sweepers = ko.observable();
     this.jingles = ko.observable();
     this.bumpers = ko.observable();
+    this.sweepers_automatic = ko.observable();
     this.sweepers_album = ko.observable();
+    this.sweeper_interval = ko.observable();
     this.jingles_album = ko.observable();
     this.bumpers_album = ko.observable();
     this.users = ko.observableArray();
@@ -1082,6 +1222,15 @@ var show_model = function(show, promos_album) {
         this.show_repeat(new show_repeat_model(show.show_repeat));
         this.repeated(show.show_repeat ? true : false);
 
+        // set sweeper interval
+        if (show.sweeper_interval > 0) {
+            this.sweeper_interval(show.sweeper_interval);
+            this.sweepers_automatic(false);
+        } else {
+            this.sweeper_interval(1);
+            this.sweepers_automatic(true);
+        }
+
         // set users
         for (var user_index in show.users)
             this.users.push(new user_model(show.users[user_index]));
@@ -1107,6 +1256,9 @@ var show_model = function(show, promos_album) {
         this.sweepers_album(promos_album);
         this.jingles_album(promos_album);
         this.bumpers_album(promos_album);
+        // set sweeper interval
+        this.sweepers_automatic(true);
+        this.sweeper_interval(1);
         // set promos enabled
         this.sweepers(true);
         this.jingles(true);
@@ -1157,6 +1309,7 @@ var status_model = function (status_js) {
     this.current_file_artist = ko.observable();
     this.current_file_title = ko.observable();
     this.current_file_duration = ko.observable();
+    this.current_file_post = ko.observable();
     this.next_file_artist = ko.observable();
     this.next_file_title = ko.observable();
     this.current_show_title = ko.observable();
@@ -1169,6 +1322,7 @@ var status_model = function (status_js) {
     // additional members
     this.current_file_percentage = ko.observable();
     this.current_show_percentage = ko.observable();
+    this.current_file_post_percentage = ko.observable();
     this.current_file_elapsed = ko.observable();
     this.current_file_remaining = ko.observable();
     this.current_show_elapsed = ko.observable();
