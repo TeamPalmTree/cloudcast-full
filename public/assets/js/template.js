@@ -200,29 +200,36 @@ var block_model = function(block) {
     }.bind(this);
 
     // initialize
-    if (!block)
-        return;
+    if (block) {
 
-    // set vars
-    this.title(block.title);
-    this.description(block.description);
-    this.initial_key(block.initial_key);
-    this.initial_energy(block.initial_energy);
-    this.initial_genre(block.initial_genre);
-    this.harmonic_key(block.harmonic_key);
-    this.harmonic_energy(block.harmonic_energy);
-    this.harmonic_genre(block.harmonic_genre);
-    this.separate_similar(block.separate_similar);
-    this.file_query(block.file_query);
+        // set vars
+        this.title(block.title);
+        this.description(block.description);
+        this.initial_key(block.initial_key);
+        this.initial_energy(block.initial_energy);
+        this.initial_genre(block.initial_genre);
+        this.harmonic_key(block.harmonic_key);
+        this.harmonic_energy(block.harmonic_energy);
+        this.harmonic_genre(block.harmonic_genre);
+        this.separate_similar(block.separate_similar);
+        this.file_query(block.file_query);
 
-    // set block weights
-    for (var block_weights_index in block.block_weights)
-        this.block_weights.push(new block_weight_model(block.block_weights[block_weights_index]));
-    // if we don't have a block criterium, add one
-    if (!block.block_weights || (block.block_weights.length == 0))
+        // set block weights
+        for (var block_weights_index in block.block_weights)
+            this.block_weights.push(new block_weight_model(block.block_weights[block_weights_index]));
+
+        // if we don't have a block criterium, add one
+        if (!block.block_weights || (block.block_weights.length == 0))
+            this.add_block_weight();
+        else
+            this.weighted(true);
+
+    } else {
+
+        // add an initial block weight
         this.add_block_weight();
-    else
-        this.weighted(true);
+
+    }
 
 };
 
