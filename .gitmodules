@@ -43,3 +43,6 @@
 [submodule "public/assets/shared"]
 	path = public/assets/shared
 	url = https://github.com/TeamPalmTree/assets
+[submodule "fuel/packages/ichook"]
+	path = fuel/packages/ichook
+	url = https://github.com/TeamPalmTree/ichook
