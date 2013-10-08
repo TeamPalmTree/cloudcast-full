@@ -40,9 +40,6 @@
 [submodule "fuel/packages/getid3"]
 	path = fuel/packages/getid3
 	url = https://github.com/TeamPalmTree/getid3
-[submodule "fuel/packages/ichook"]
-	path = fuel/packages/ichook
-	url = https://github.com/TeamPalmTree/ichook
 [submodule "public/assets/shared"]
 	path = public/assets/shared
 	url = https://github.com/TeamPalmTree/assets
