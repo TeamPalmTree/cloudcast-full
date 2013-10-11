@@ -34,6 +34,14 @@ var block_form_model = function () {
     this.block(new block_model(block_js));
     // subscribe viewer to block query
     this.file_viewer.subscribe(this.block().file_query);
+
+    // block typeaheads
+    this.query_blocks = function(query, process) {
+        return $.get('/blocks/search.json', { query: query }, function (data) {
+            if (data) return process(data);
+        });
+    };
+
     // run initial query
     this.file_viewer.query(this.block().file_query());
 
@@ -188,6 +196,8 @@ var block_model = function(block) {
     this.separate_similar = ko.observable('1');
     this.weighted = ko.observable();
     this.block_weights = ko.observableArray();
+    this.backup_blocked = ko.observable();
+    this.backup_block = ko.observable();
 
     // add block criterium
     this.add_block_weight = function() {
@@ -201,6 +211,10 @@ var block_model = function(block) {
 
     // initialize
     if (block) {
+
+        // if true, ignore
+        if (block === true)
+            return;
 
         // set vars
         this.title(block.title);
@@ -224,14 +238,20 @@ var block_model = function(block) {
         else
             this.weighted(true);
 
+        // set block
+        this.backup_block(new block_model(block.backup_block));
+        this.backup_blocked(block.backup_block ? true : false);
+
     } else {
 
         // add an initial block weight
         this.add_block_weight();
+        // create a block
+        this.backup_block(new block_model(true));
 
     }
 
-};
+}
 
 //////////////////////
 // CLOUDCAST MODELS //
