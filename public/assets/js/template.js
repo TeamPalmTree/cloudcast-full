@@ -1532,7 +1532,7 @@ function hook_blocks() {
     // block delete
     $('#blocks-index a[name=delete]').click(function () {
         $('#cloudcast-modal-delete .modal-body').html('Are you sure you want to delete the block "' + $(this).data('title') + '"?');
-        $('#cloudcast-modal-delete button[name=delete]').off().click(function () { window.location.replace('/blocks/delete/' + $(this).data('id')); });
+        $('#cloudcast-modal-delete button[name=delete]').off().click(function () { window.location.replace('/blocks/delete/' + $(this).data('id'));}.bind(this));
         $('#cloudcast-modal-delete').modal('show');
     });
 
@@ -1592,8 +1592,7 @@ function hook_shows() {
     // show delete
     $('#shows-index a[name=delete]').click(function () {
         $('#cloudcast-modal-delete .modal-body').html('Are you sure you want to delete the show "' + $(this).data('title') + '"?');
-        var id = $(this).data('id');
-        $('#cloudcast-modal-delete button[name=delete]').off().click(function () { window.location.replace('/shows/delete/' + id); });
+        $('#cloudcast-modal-delete button[name=delete]').off().click(function () { window.location.replace('/shows/delete/' + $(this).data('id')); }.bind(this));
         $('#cloudcast-modal-delete').modal('show');
     });
 

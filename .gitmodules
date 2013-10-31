@@ -46,3 +46,7 @@
 [submodule "fuel/packages/ichook"]
 	path = fuel/packages/ichook
 	url = https://github.com/TeamPalmTree/ichook
+[submodule "fuel/packages/promoter"]
+	path = fuel/packages/promoter
+	url = https://github.com/TeamPalmTree/authority-promoter
+	branch = master
