@@ -411,6 +411,45 @@ var cloudcast_display_model = function () {
         }.bind(this));
     }.bind(this);
 
+    // set post (current file)
+    this.set_post = function() {
+
+        // get current post
+        var current_post = this.status().current_file_post() ? this.status().current_file_post() : '00:00:';
+        // set up edit modal
+        $('#cloudcast-modal-edit .modal-body').html('UPDATE POST <input type="text" value="' + current_post + '" placeholder="00:00:00" />');
+        $('#cloudcast-modal-edit').modal('show');
+
+        // get post input
+        var post_input = $('#cloudcast-modal-edit input');
+        // focus post input
+        post_input.focus();
+        post_input.val(post_input.val());
+
+        // set post function
+        var set_post = function () {
+            // get post
+            var post = post_input.val();
+            // set post
+            $.get('/files/set_post.rawxml', {
+                'post': post,
+                'id': this.status().current_file_id()
+            }, function () {
+                // set post (before standard update)
+                this.status().current_file_post(post);
+                // hide modal
+                $('#cloudcast-modal-edit').modal('hide');
+            }.bind(this));
+        }.bind(this);
+
+        // set up input enter and done button
+        $('#cloudcast-modal-edit button[name=save]').off().click(set_post);
+        post_input.keypress(function(e) {
+            if (e.which == '13') set_post();
+        });
+
+    }.bind(this);
+
     // poll engine for status
     setInterval(function() {
         this.poll();
@@ -726,8 +765,9 @@ var schedule_file_model = function(schedule_file_js) {
     // members
     this.played_on = ko.observable();
     this.file = ko.observable();
+    this.queued = ko.observable();
+    this.skipped = ko.observable();
     this.focused = ko.observable(false);
-    this.queued = ko.observable(false);
     this.selected = ko.observable(false);
 
     // select
@@ -1189,7 +1229,6 @@ var show_model = function(show, promos_album) {
     this.sweepers = ko.observable();
     this.jingles = ko.observable();
     this.bumpers = ko.observable();
-    this.sweepers_automatic = ko.observable();
     this.sweepers_album = ko.observable();
     this.sweeper_interval = ko.observable();
     this.jingles_album = ko.observable();
@@ -1248,16 +1287,8 @@ var show_model = function(show, promos_album) {
         // if we don't have a repeat, make one
         this.show_repeat(new show_repeat_model(show.show_repeat));
         this.repeated(show.show_repeat ? true : false);
-
         // set sweeper interval
-        if (show.sweeper_interval > 0) {
-            this.sweeper_interval(show.sweeper_interval);
-            this.sweepers_automatic(false);
-        } else {
-            this.sweeper_interval(1);
-            this.sweepers_automatic(true);
-        }
-
+        this.sweeper_interval(show.sweeper_interval);
         // set users
         for (var user_index in show.users)
             this.users.push(new user_model(show.users[user_index]));
@@ -1284,7 +1315,6 @@ var show_model = function(show, promos_album) {
         this.jingles_album(promos_album);
         this.bumpers_album(promos_album);
         // set sweeper interval
-        this.sweepers_automatic(true);
         this.sweeper_interval(1);
         // set promos enabled
         this.sweepers(true);
@@ -1333,6 +1363,7 @@ var show_repeat_model = function(show_repeat) {
 var status_model = function (status_js) {
 
     // standard members
+    this.current_file_id = ko.observable();
     this.current_file_artist = ko.observable();
     this.current_file_title = ko.observable();
     this.current_file_duration = ko.observable();
