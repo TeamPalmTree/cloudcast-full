@@ -763,10 +763,10 @@ var schedule_date_model = function(schedule_date, schedule_index) {
 var schedule_file_model = function(schedule_file_js) {
 
     // members
-    this.played_on = ko.observable();
+    this.played_on = ko.observable(null);
     this.file = ko.observable();
-    this.queued = ko.observable();
-    this.skipped = ko.observable();
+    this.queued = ko.observable('0');
+    this.skipped = ko.observable('0');
     this.focused = ko.observable(false);
     this.selected = ko.observable(false);
 
@@ -793,6 +793,7 @@ var schedules_index_model = function() {
     var original_editing_schedule_files;
     var original_auto_refresh;
     var refresh_interval;
+    var focusing = false;
 
     // toggle edit
     this.edit_schedule = function(schedule) {
@@ -995,12 +996,16 @@ var schedules_index_model = function() {
     }.bind(this));
 
     this.toggle_auto_focus = function() {
-        // flip auto-focus
         this.auto_focus(!this.auto_focus());
-    };
+    }.bind(this);
 
     this.refresh = function() {
+        // post request for schedule dates
         $.post('/schedules/dates.json', function (schedule_dates) {
+
+            // verify we are not editing as this call can take some time
+            if (this.editing_schedule())
+                return;
 
             var selected_schedule_ids = new Array();
             var expanded_schedule_ids = new Array();
@@ -1053,24 +1058,30 @@ var schedules_index_model = function() {
             return;
 
         // get the third last
-        var third_last_queued_schedule_files = queued_schedule_files.slice(-3)[0];
+        var third_last_queued_schedule_files = queued_schedule_files.slice(-4)[0];
         // ensure expansion & focus
         first_schedule.expanded(true);
+        focusing = true;
         third_last_queued_schedule_files.focused(true);
+        setTimeout(function() { focusing = false; }, 0);
 
     }.bind(this);
 
-    // set schedule dates
-    ko.mapping.fromJS(schedule_dates_js, {
-        create: function(options) {
-            return new schedule_date_model(options.data, this);
-        }.bind(this)
-    }, this.schedule_dates);
+    // user scrolled
+    this.scrolled = function(e) {
+
+        if (focusing) return;
+        // else, disable auto-focus
+        this.auto_focus(false);
+
+    }.bind(this);
 
     // run initial query
     this.file_finder.clear();
     // enable auto-refresh
     this.auto_refresh(true);
+    // load initial dates
+    this.refresh();
 
 };
 
@@ -1370,6 +1381,8 @@ var status_model = function (status_js) {
     this.current_file_post = ko.observable();
     this.next_file_artist = ko.observable();
     this.next_file_title = ko.observable();
+    this.next_file_post = ko.observable();
+    this.next_file_duration = ko.observable();
     this.current_show_title = ko.observable();
     this.current_show_duration = ko.observable();
     this.next_show_title = ko.observable();
@@ -1597,8 +1610,15 @@ function hook_schedules() {
 
     // index
     var schedules_index_element = document.getElementById('schedules-index');
-    if (schedules_index_element)
-        ko.applyBindings(new schedules_index_model(), schedules_index_element);
+    // verify this element in DOM
+    if (!schedules_index_element)
+        return;
+    // create index model
+    var the_schedules_index_model = new schedules_index_model();
+    // bind index
+    ko.applyBindings(the_schedules_index_model, schedules_index_element);
+    // scroll event
+    $(schedules_index_element).find('.cloudcast-section-content-bottom-content').scroll(the_schedules_index_model.scrolled);
 
 }
 
