@@ -763,6 +763,7 @@ var schedule_date_model = function(schedule_date, schedule_index) {
 var schedule_file_model = function(schedule_file_js) {
 
     // members
+    this.id = ko.observable();
     this.played_on = ko.observable(null);
     this.file = ko.observable();
     this.queued = ko.observable('0');
@@ -774,6 +775,28 @@ var schedule_file_model = function(schedule_file_js) {
     this.select = function() {
         this.selected(!this.selected());
     }.bind(this);
+
+    this.css = ko.computed(function() {
+
+        // skipped
+        if (this.skipped() == '1')
+            return 'important';
+        // played
+        if (this.played_on())
+            return 'success';
+        // queued
+        if (this.queued() == '1')
+            return 'warning';
+        // promo
+        if (this.file() &&
+            ((this.file().genre() == 'Bumper')
+            || (this.file().genre() == 'Sweeper')
+            || (this.file().genre() == 'Intro')))
+            return 'dimmed';
+        // none
+        return '';
+
+    }.bind(this));
 
     // map
     ko.mapping.fromJS(schedule_file_js, null, this);
