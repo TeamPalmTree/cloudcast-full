@@ -1,27 +1,6 @@
-[submodule "fuel/core"]
-	path = fuel/core
-	url = https://github.com/fuel/core
-[submodule "fuel/packages/orm"]
-	path = fuel/packages/orm
-	url = https://github.com/fuel/orm
-[submodule "fuel/packages/oil"]
-	path = fuel/packages/oil
-	url = https://github.com/fuel/oil
-[submodule "fuel/packages/auth"]
-	path = fuel/packages/auth
-	url = https://github.com/fuel/auth
-[submodule "fuel/packages/email"]
-	path = fuel/packages/email
-	url = https://github.com/fuel/email
-[submodule "fuel/packages/parser"]
-	path = fuel/packages/parser
-	url = https://github.com/fuel/parser
 [submodule "fuel/packages/shared"]
 	path = fuel/packages/shared
 	url = https://github.com/TeamPalmTree/shared
-[submodule "fuel/packages/less"]
-	path = fuel/packages/less
-	url = https://github.com/TeamPalmTree/fuel-less
 [submodule "fuel/packages/tagscanner"]
 	path = fuel/packages/tagscanner
 	url = https://github.com/TeamPalmTree/cloudcast-tagscanner
@@ -37,9 +16,6 @@
 [submodule "fuel/packages/cemw"]
 	path = fuel/packages/cemw
 	url = https://github.com/TeamPalmTree/cemw
-[submodule "fuel/packages/getid3"]
-	path = fuel/packages/getid3
-	url = https://github.com/TeamPalmTree/getid3
 [submodule "public/assets/shared"]
 	path = public/assets/shared
 	url = https://github.com/TeamPalmTree/assets
@@ -50,3 +26,27 @@
 	path = fuel/packages/promoter
 	url = https://github.com/TeamPalmTree/authority-promoter
 	branch = master
+[submodule "fuel/core"]
+	path = fuel/core
+	url = https://github.com/fuel/core
+	branch = 1.7/master
+[submodule "fuel/packages/auth"]
+	path = fuel/packages/auth
+	url = https://github.com/fuel/auth
+	branch = 1.7/master
+[submodule "fuel/packages/email"]
+	path = fuel/packages/email
+	url = https://github.com/fuel/email
+	branch = 1.7/master
+[submodule "fuel/packages/orm"]
+	path = fuel/packages/orm
+	url = https://github.com/fuel/orm
+	branch = 1.7/master
+[submodule "fuel/packages/oil"]
+	path = fuel/packages/oil
+	url = https://github.com/fuel/oil
+	branch = 1.7/master
+[submodule "fuel/packages/parser"]
+	path = fuel/packages/parser
+	url = https://github.com/fuel/parser
+	branch = 1.7/master
