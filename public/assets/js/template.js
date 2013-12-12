@@ -675,23 +675,18 @@ function cloudcast_display_model() {
 
     // set post (current file)
     this.set_post = function() {
-
-        // set post function
-        var set_post = function () {
-            // get post
-            var post = modal.value();
-            // set post
-            $.get('/files/set_post.rawxml', {
-                'post': post,
-                'id': this.status().current_file_id()
-            }, function () {
-                // set post (before standard update)
-                this.status().current_file_post(post);
-                // hide modal
-                modal.hide();
-            }.bind(this));
-        }.bind(this);
-
+        // get post
+        var post = modal.value();
+        // set post
+        $.get('/files/set_post.rawxml', {
+            'post': post,
+            'id': this.status().current_file_id()
+        }, function () {
+            // set post (before standard update)
+            this.status().current_file_post(post);
+            // hide modal
+            modal.hide();
+        }.bind(this));
     }.bind(this);
 
     // poll engine for status
