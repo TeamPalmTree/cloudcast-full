@@ -38,10 +38,6 @@
 	path = fuel/packages/email
 	url = https://github.com/fuel/email
 	branch = 1.7/master
-[submodule "fuel/packages/orm"]
-	path = fuel/packages/orm
-	url = https://github.com/fuel/orm
-	branch = 1.7/master
 [submodule "fuel/packages/oil"]
 	path = fuel/packages/oil
 	url = https://github.com/fuel/oil
@@ -50,3 +46,7 @@
 	path = fuel/packages/parser
 	url = https://github.com/fuel/parser
 	branch = 1.7/master
+[submodule "fuel/packages/orm"]
+	path = fuel/packages/orm
+	url = https://github.com/fuel/orm
+	branch = 1.8/develop

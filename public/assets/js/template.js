@@ -1596,6 +1596,8 @@ function schedule_model(schedule) {
         // if we have no selected schedule files, select them all
         var none_selected = (this.selected_schedule_files_count() == 0);
         ko.utils.arrayForEach(this.schedule_files(), function(schedule_file) {
+            // verify schedule file not static (queued, played, skipped)
+            if (schedule_file.static()) return;
             schedule_file.selected(none_selected);
         }.bind(this));
     }.bind(this);
