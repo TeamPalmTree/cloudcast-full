@@ -1660,6 +1660,7 @@ function settings_index_model() {
 // SHOW MODELS //
 /////////////////
 
+// show day
 function show_day_model(show_day) {
     ko.mapping.fromJS(show_day, {
         'shows': {
@@ -1871,6 +1872,8 @@ function show_model(show) {
     this.id = ko.observable();
     this.title = ko.observable();
     this.description = ko.observable();
+    this.website = ko.observable();
+    this.featured = ko.observable();
     this.user_start_on = ko.observable();
     this.user_start_on_timeday = ko.observable();
     this.user_start_on_time = ko.observable();
@@ -1965,6 +1968,8 @@ function show_model(show) {
         'include': [
             'title',
             'description',
+            'website',
+            'featured',
             'user_start_on',
             'duration',
             'block',
@@ -2215,7 +2220,7 @@ function streams_index_model() {
     // selected streams count
     this.selected_streams_count = ko.computed(function() {
         var count = 0;
-        // get selected blocks
+        // get selected streams
         ko.utils.arrayForEach(this.streams(), function(stream) {
             if (stream.selected()) { count++; }
         }.bind(this));
@@ -2226,7 +2231,7 @@ function streams_index_model() {
     this.select_all = function() {
         // if we have no selected streams, select them all
         var none_selected = (this.selected_streams_count() == 0);
-        // select all blocks
+        // select all streams
         ko.utils.arrayForEach(this.streams(), function(stream) {
             stream.selected(none_selected);
         }.bind(this));
