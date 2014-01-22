@@ -1440,7 +1440,7 @@ function schedules_index_model() {
         first_schedule.expanded(true);
         focusing = true;
         third_last_queued_schedule_files.focused(true);
-        setTimeout(function() { focusing = false; }, 0);
+        setTimeout(function() { focusing = false; }, 100);
 
     }.bind(this);
 
@@ -2424,7 +2424,7 @@ function hook_schedules() {
     // bind index
     ko.applyBindings(the_schedules_index_model, schedules_index_element);
     // scroll event
-    $(schedules_index_element).find('.cloudcast-section-content').scroll(the_schedules_index_model.scrolled);
+    $(schedules_index_element).find('.standard-section-content').scroll(the_schedules_index_model.scrolled);
 
 }
 
