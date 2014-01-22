@@ -6785,6 +6785,11 @@ h6 {
 .modal {
   color: #ffffff;
 }
+@media all and (max-width: 768px) {
+  .carousel-caption {
+    display: none;
+  }
+}
 .standard {
   position: absolute;
   width: 100%;
