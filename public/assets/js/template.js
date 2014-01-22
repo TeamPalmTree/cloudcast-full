@@ -1315,7 +1315,9 @@ function schedules_index_model() {
         var none_selected = (this.selected_schedules_count() == 0);
         ko.utils.arrayForEach(this.schedule_dates(), function(schedule_date) {
             ko.utils.arrayForEach(schedule_date.schedules(), function(schedule) {
-                schedule.selected(none_selected);
+                // we can only select non-static schedules
+                if (!schedule.static())
+                    schedule.selected(none_selected);
             }.bind(this));
         }.bind(this));
     }.bind(this);
@@ -1519,6 +1521,19 @@ function schedule_model(schedule) {
         });
         // normalize total
         return Helper.calculate_duration(total_hours, total_minutes, total_seconds);
+    }.bind(this));
+
+    // static computed
+    this.static = ko.computed(function() {
+        var is_static = false;
+        // loop through all schedule files; a single static SF will make us also static
+        $.each(this.schedule_files(), function(index, schedule_file) {
+            if (schedule_file.static()) {
+                is_static = true;
+                return false;
+            }
+        });
+        return is_static;
     }.bind(this));
 
     // editing subscription
