@@ -50,3 +50,6 @@
 	path = fuel/packages/orm
 	url = https://github.com/fuel/orm
 	branch = 1.8/develop
+[submodule "fuel/packages/mixingwheel"]
+	path = fuel/packages/mixingwheel
+	url = https://github.com/TeamPalmTree/mixingwheel.git
